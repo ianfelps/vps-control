@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/VpsControl.Agent/VpsControl.Agent.csproj" />
+    <Project Path="src/VpsControl.Api/VpsControl.Api.csproj" />
+    <Project Path="src/VpsControl.Contracts/VpsControl.Contracts.csproj" />
+    <Project Path="src/VpsControl.Core/VpsControl.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/VpsControl.Api.Tests/VpsControl.Api.Tests.csproj" />
+    <Project Path="tests/VpsControl.Core.Tests/VpsControl.Core.Tests.csproj" />
+  </Folder>
+</Solution>

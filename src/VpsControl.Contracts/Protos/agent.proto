@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+option csharp_namespace = "VpsControl.Contracts.Agent";
+
+package vpscontrol.agent.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// Canal privado API -> agente, servido em Unix domain socket.
+// Regra: somente operações tipadas e enumeradas. Nunca execução arbitrária de comandos.
+service AgentService {
+  rpc Ping (PingRequest) returns (PingReply);
+  rpc GetHostSnapshot (HostSnapshotRequest) returns (HostSnapshotReply);
+}
+
+message PingRequest {}
+
+message PingReply {
+  string agent_version = 1;
+  google.protobuf.Timestamp server_time = 2;
+}
+
+message HostSnapshotRequest {}
+
+message HostSnapshotReply {
+  google.protobuf.Timestamp timestamp = 1;
+  HostInfo info = 2;
+  CpuUsage cpu = 3;
+  MemoryUsage memory = 4;
+  repeated DiskUsage disks = 5;
+  repeated NetworkUsage networks = 6;
+}
+
+message HostInfo {
+  string hostname = 1;
+  string os_name = 2;
+  string kernel_version = 3;
+  google.protobuf.Duration uptime = 4;
+  int32 logical_cores = 5;
+}
+
+message CpuUsage {
+  double usage_percent = 1;
+  double load1 = 2;
+  double load5 = 3;
+  double load15 = 4;
+}
+
+message MemoryUsage {
+  int64 total_bytes = 1;
+  int64 available_bytes = 2;
+  int64 swap_total_bytes = 3;
+  int64 swap_free_bytes = 4;
+}
+
+message DiskUsage {
+  string mount_point = 1;
+  string file_system = 2;
+  int64 total_bytes = 3;
+  int64 free_bytes = 4;
+}
+
+message NetworkUsage {
+  string interface = 1;
+  int64 rx_bytes_total = 2;
+  int64 tx_bytes_total = 3;
+  double rx_bytes_per_second = 4;
+  double tx_bytes_per_second = 5;
+}

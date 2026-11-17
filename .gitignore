@@ -1,0 +1,27 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+
+# Node
+node_modules/
+apps/web/dist/
+
+# Dados locais e artefatos
+# (ancorado na raiz: no Windows, "data/" casaria com a pasta de código src/VpsControl.Api/Data/)
+/data/
+.data/
+/artifacts/
+*.db
+*.db-shm
+*.db-wal
+
+# Segredos
+.env
+*.token
+
+# SPA publicada dentro da API (gerada no Docker)
+src/VpsControl.Api/wwwroot/*
+!src/VpsControl.Api/wwwroot/.gitkeep

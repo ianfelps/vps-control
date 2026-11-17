@@ -1,0 +1,596 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "VpsControl.Api | v1",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audit": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AuditEntryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/status": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/snapshot": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostSnapshot"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/history": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetricsPoint"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/antiforgery": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUser"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuditEntryDto": {
+        "required": [
+          "id",
+          "timestamp",
+          "actor",
+          "action",
+          "target",
+          "result",
+          "remoteIp",
+          "details"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "target": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "result": {
+            "type": "string"
+          },
+          "remoteIp": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "details": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CpuUsage": {
+        "required": [
+          "usagePercent",
+          "load1",
+          "load5",
+          "load15"
+        ],
+        "type": "object",
+        "properties": {
+          "usagePercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "load1": {
+            "type": "number",
+            "format": "double"
+          },
+          "load5": {
+            "type": "number",
+            "format": "double"
+          },
+          "load15": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "CurrentUser": {
+        "required": [
+          "username",
+          "tailscaleUser"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "tailscaleUser": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "DiskUsage": {
+        "required": [
+          "mountPoint",
+          "fileSystem",
+          "totalBytes",
+          "freeBytes"
+        ],
+        "type": "object",
+        "properties": {
+          "mountPoint": {
+            "type": "string"
+          },
+          "fileSystem": {
+            "type": "string"
+          },
+          "totalBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "freeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "usedBytes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "HealthResponse": {
+        "required": [
+          "status",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "HostInfo": {
+        "required": [
+          "hostname",
+          "osName",
+          "kernelVersion",
+          "uptime",
+          "logicalCores"
+        ],
+        "type": "object",
+        "properties": {
+          "hostname": {
+            "type": "string"
+          },
+          "osName": {
+            "type": "string"
+          },
+          "kernelVersion": {
+            "type": "string"
+          },
+          "uptime": {
+            "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$",
+            "type": "string"
+          },
+          "logicalCores": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uptimeSeconds": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "HostSnapshot": {
+        "required": [
+          "timestamp",
+          "info",
+          "cpu",
+          "memory",
+          "disks",
+          "networks"
+        ],
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "info": {
+            "$ref": "#/components/schemas/HostInfo"
+          },
+          "cpu": {
+            "$ref": "#/components/schemas/CpuUsage"
+          },
+          "memory": {
+            "$ref": "#/components/schemas/MemoryUsage"
+          },
+          "disks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiskUsage"
+            }
+          },
+          "networks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkUsage"
+            }
+          }
+        }
+      },
+      "LoginRequest": {
+        "required": [
+          "username",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "MemoryUsage": {
+        "required": [
+          "totalBytes",
+          "availableBytes",
+          "swapTotalBytes",
+          "swapFreeBytes"
+        ],
+        "type": "object",
+        "properties": {
+          "totalBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "availableBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "swapTotalBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "swapFreeBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "usedBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "swapUsedBytes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "MetricsPoint": {
+        "required": [
+          "timestamp",
+          "cpuPercent",
+          "memoryPercent",
+          "rxBytesPerSecond",
+          "txBytesPerSecond"
+        ],
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cpuPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "memoryPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "rxBytesPerSecond": {
+            "type": "number",
+            "format": "double"
+          },
+          "txBytesPerSecond": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "NetworkUsage": {
+        "required": [
+          "interface",
+          "rxBytesTotal",
+          "txBytesTotal",
+          "rxBytesPerSecond",
+          "txBytesPerSecond"
+        ],
+        "type": "object",
+        "properties": {
+          "interface": {
+            "type": "string"
+          },
+          "rxBytesTotal": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "txBytesTotal": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rxBytesPerSecond": {
+            "type": "number",
+            "format": "double"
+          },
+          "txBytesPerSecond": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SourceStatus": {
+        "required": [
+          "source",
+          "available",
+          "lastSuccessAt",
+          "lastError"
+        ],
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "lastSuccessAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastError": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "System"
+    },
+    {
+      "name": "Audit"
+    },
+    {
+      "name": "Auth"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+**/bin
+**/obj
+**/node_modules
+apps/web/dist
+artifacts
+**/.data
+.git
+.github
+.vs
+.env
+*.db
+*.token

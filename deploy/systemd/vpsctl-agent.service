@@ -1,0 +1,55 @@
+[Unit]
+Description=VPS Control agent (métricas do host, canal gRPC em Unix socket)
+Documentation=https://github.com/ianfelps/vps-control
+After=network.target
+# Fase 3: descomentar quando o agente passar a falar com o Docker.
+# After=docker.service
+# Wants=docker.service
+
+[Service]
+Type=notify
+User=vpsctl-agent
+Group=vpsctl
+# Fase 3: acesso ao docker.sock (equivale a root — por isso só o agente o recebe).
+# SupplementaryGroups=docker
+WorkingDirectory=/opt/vps-control/agent
+ExecStart=/opt/vps-control/agent/vpsctl-agent
+Environment=DOTNET_ENVIRONMENT=Production
+Restart=on-failure
+RestartSec=3
+
+# /run/vps-control (vpsctl-agent:vpsctl 0750) — socket criado com 0660.
+RuntimeDirectory=vps-control
+RuntimeDirectoryMode=0750
+UMask=0007
+
+# ---------- Hardening ----------
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RemoveIPC=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+# Somente Unix sockets: o agente não fala com a rede.
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

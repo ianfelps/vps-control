@@ -1,0 +1,53 @@
+# VPS Control — API + SPA. O agente roda no host via systemd (deploy/systemd).
+# Publicação: somente 127.0.0.1:8080; exposto na tailnet via `tailscale serve`.
+name: vps-control
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/api.Dockerfile
+    image: vps-control-api:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      VPSCTL_Auth__InitialAdminPassword: ${VPSCTL_ADMIN_PASSWORD:-}
+      VPSCTL_Auth__TailscaleAllowedUsers__0: ${VPSCTL_TAILSCALE_USER:-}
+      VPSCTL_Metrics__Source: Agent
+      VPSCTL_Metrics__AgentSocketPath: /run/vps-control/agent.sock
+      VPSCTL_Metrics__AgentTokenFile: /run/secrets/agent_token
+      VPSCTL_ForwardedHeaders__KnownNetworks__0: 172.30.50.0/24
+    # Grupo vpsctl do host: acesso ao socket do agente e leitura do token.
+    group_add:
+      - "${VPSCTL_GID:?defina VPSCTL_GID (saída de install-agent.sh)}"
+    volumes:
+      - data:/data
+      # Diretório (não o arquivo) para sobreviver à recriação do socket quando o agente reinicia.
+      - /run/vps-control:/run/vps-control
+    secrets:
+      - agent_token
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    labels:
+      # O painel recusa parar/reiniciar containers com esta label (inclusive ele mesmo).
+      vpsctl.protected: "true"
+    networks: [vpsctl]
+
+volumes:
+  data:
+
+secrets:
+  agent_token:
+    file: /etc/vps-control/agent.token
+
+networks:
+  vpsctl:
+    ipam:
+      config:
+        - subnet: 172.30.50.0/24

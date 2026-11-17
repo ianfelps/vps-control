@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <!-- Nome do binário publicado. Definido aqui (não via -p:) para não vazar aos projetos referenciados. -->
+    <AssemblyName>vpsctl-agent</AssemblyName>
+    <RootNamespace>VpsControl.Agent</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UserSecretsId>dotnet-VpsControl.Agent-1072ae7e-bbd7-44c7-93f0-e8cf8393e925</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VpsControl.Contracts\VpsControl.Contracts.csproj" />
+    <ProjectReference Include="..\VpsControl.Core\VpsControl.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore.Server" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" />
+    <!-- Força ILCompiler com patch de segurança mais novo que o embutido no SDK (GHSA-p3jp-9v83-76w9). -->
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+{
+  "name": "vps-control",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "dev:web": "pnpm --filter @vps-control/web dev",
+    "dev:api": "dotnet run --project src/VpsControl.Api",
+    "dev:agent": "dotnet run --project src/VpsControl.Agent",
+    "build": "dotnet build && pnpm --filter @vps-control/web build",
+    "test": "dotnet test && pnpm --filter @vps-control/web test",
+    "lint": "pnpm --filter @vps-control/web lint",
+    "gen:api": "dotnet build src/VpsControl.Api && pnpm --filter @vps-control/web gen:api"
+  }
+}
