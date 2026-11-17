@@ -147,8 +147,12 @@ No repositório, em **Settings → Secrets and variables → Actions**:
 | Variable | `VPS_ARCH` | Opcional: `arm64` se a VPS for ARM |
 
 Em **Settings → Environments**, crie o environment `production`. Recomendo marcar **Required
-reviewers** no início: cada deploy espera a sua aprovação. Os secrets podem ficar no
+reviewers** no início: cada deploy espera a sua aprovação. Os **secrets** podem ficar no
 environment em vez do repositório.
+
+> As **variáveis** `VPS_HOST` e `VPS_ARCH` precisam ficar no nível do **repositório**, não do
+> environment. O job `publish` roda fora do environment, então lá elas chegariam vazias e o
+> workflow terminaria como `skipped`.
 
 ## 7. Primeiro deploy
 
