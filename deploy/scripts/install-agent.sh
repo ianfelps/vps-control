@@ -37,9 +37,16 @@ systemctl daemon-reload
 systemctl enable vpsctl-agent >/dev/null
 systemctl restart vpsctl-agent
 
-sleep 1
-systemctl --no-pager --lines=5 status vpsctl-agent || true
+# Espera o socket aparecer (até 20 s); falha de verdade para o deploy poder fazer rollback.
+for _ in $(seq 1 40); do
+  if [[ -S /run/vps-control/agent.sock ]] && systemctl is-active --quiet vpsctl-agent; then
+    echo "Agente ativo em /run/vps-control/agent.sock"
+    echo "VPSCTL_GID=$(getent group vpsctl | cut -d: -f3)"
+    exit 0
+  fi
+  sleep 0.5
+done
 
-echo
-echo "Coloque no .env do compose:"
-echo "  VPSCTL_GID=$(getent group vpsctl | cut -d: -f3)"
+systemctl --no-pager --lines=20 status vpsctl-agent >&2 || true
+echo "Agente não ficou ativo." >&2
+exit 1

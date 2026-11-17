@@ -4,10 +4,12 @@ name: vps-control
 
 services:
   api:
+    # Local: `docker compose up --build`. VPS: deploy.sh define VPSCTL_API_IMAGE com a imagem do
+    # GHCR fixada pelo SHA do commit e sobe com --no-build.
     build:
       context: .
       dockerfile: deploy/docker/api.Dockerfile
-    image: vps-control-api:latest
+    image: ${VPSCTL_API_IMAGE:-vps-control-api:latest}
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"

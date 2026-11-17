@@ -439,49 +439,34 @@ ESLint (incluindo regras de hooks/pureza do React) e Prettier.
 2. **web:** tipos gerados atualizados, lint, format check, testes, build.
 3. **images:** build da imagem da API e do agente Native AOT.
 
+[deploy.yml](.github/workflows/deploy.yml) roda após o CI verde na `main` (ou manualmente) e faz o deploy na VPS.
+
 ---
 
 ## Deploy na VPS
 
-Guia completo: **[docs/deployment/deploy.md](docs/deployment/deploy.md)**. Resumo:
+**Deploy automático** a cada push na `main` com CI verde
+([.github/workflows/deploy.yml](.github/workflows/deploy.yml)):
 
-1. Compilar e instalar o agente:
+1. Publica `vps-control-api:<sha>` e `vps-control-bundle:<sha>` (agente AOT + compose + scripts)
+   no GHCR.
+2. Entra na tailnet como nó efêmero `tag:ci` e roda, via Tailscale SSH, o único comando permitido
+   ao usuário `deploy`: `sudo /opt/vps-control/bin/deploy.sh <sha>`.
+3. [deploy.sh](deploy/scripts/deploy.sh): lock → pull → backup do banco → agente (se mudou) →
+   `compose up --wait` → healthchecks → **rollback automático** se falhar.
 
-   ```bash
-   bash deploy/scripts/build-agent.sh x64
-   ```
+Sem porta SSH pública e sem chave SSH no GitHub. Rollback manual: rode o workflow **Deploy**
+informando um SHA anterior.
 
-   ```bash
-   sudo deploy/scripts/install-agent.sh artifacts/agent-x64
-   ```
+Configuração inicial (uma vez), passo a passo em
+**[docs/deployment/deploy.md](docs/deployment/deploy.md)**:
 
-2. Configurar e subir a API:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   ```bash
-   docker compose up -d --build
-   ```
-
-3. Publicar na tailnet:
-
-   ```bash
-   sudo tailscale serve --bg --https=443 http://127.0.0.1:8080
-   ```
-
-4. Validar que nada ficou exposto:
-
-   ```bash
-   sudo ss -tlnp | grep 8080
-   ```
-
-5. Agendar backup diário:
-
-   ```bash
-   sudo deploy/scripts/backup-db.sh /var/backups/vps-control
-   ```
+1. Docker e Tailscale na VPS (`tailscale up --ssh --advertise-tags=tag:vps`).
+2. Tags e regra SSH na política do Tailscale; OAuth client com `tag:ci`.
+3. `sudo bash bootstrap-vps.sh ghcr.io/<owner>` na VPS.
+4. Secrets `TS_OAUTH_CLIENT_ID`/`TS_OAUTH_SECRET`, variável `VPS_HOST` e environment
+   `production` no GitHub.
+5. Primeiro deploy pelo Actions e `tailscale serve --bg --https=443 http://127.0.0.1:8080`.
 
 ---
 
