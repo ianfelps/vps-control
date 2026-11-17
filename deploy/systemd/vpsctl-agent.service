@@ -1,17 +1,16 @@
 [Unit]
 Description=VPS Control agent (métricas do host, canal gRPC em Unix socket)
 Documentation=https://github.com/ianfelps/vps-control
-After=network.target
-# Fase 3: descomentar quando o agente passar a falar com o Docker.
-# After=docker.service
-# Wants=docker.service
+After=network.target docker.service
+Wants=docker.service
 
 [Service]
 Type=notify
 User=vpsctl-agent
 Group=vpsctl
-# Fase 3: acesso ao docker.sock (equivale a root — por isso só o agente o recebe).
-# SupplementaryGroups=docker
+# Acesso ao /var/run/docker.sock. Equivale a root no host — por isso só o agente o recebe,
+# e ele expõe apenas operações enumeradas (listar, inspecionar, stats, logs, start/stop/restart).
+SupplementaryGroups=docker
 WorkingDirectory=/opt/vps-control/agent
 ExecStart=/opt/vps-control/agent/vpsctl-agent
 Environment=DOTNET_ENVIRONMENT=Production

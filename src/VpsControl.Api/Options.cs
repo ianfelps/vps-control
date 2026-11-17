@@ -21,6 +21,9 @@ public sealed class AuthOptions
 
     /// <summary>Tentativas de login por minuto por IP.</summary>
     public int LoginAttemptsPerMinute { get; set; } = 5;
+
+    /// <summary>Ações administrativas (start/stop/restart, revelar env, editar app) por minuto por usuário.</summary>
+    public int AdminActionsPerMinute { get; set; } = 30;
 }
 
 public sealed class MetricsOptions
@@ -40,4 +43,7 @@ public sealed class MetricsOptions
     public double SampleIntervalSeconds { get; set; } = 2;
 
     public int HistoryMinutes { get; set; } = 60;
+
+    /// <summary>Intervalo de atualização da lista/stats de containers.</summary>
+    public double ContainerIntervalSeconds { get; set; } = 5;
 }

@@ -12,7 +12,7 @@ namespace VpsControl.Api.Endpoints;
 
 public sealed record LoginRequest(string Username, string Password);
 
-public sealed record CurrentUser(string Username, string? TailscaleUser);
+public sealed record CurrentUser(string Username, string? TailscaleUser, IReadOnlyList<string> Permissions);
 
 public static class AuthEndpoints
 {
@@ -43,9 +43,7 @@ public static class AuthEndpoints
             return TypedResults.NoContent();
         }).RequireAuthorization();
 
-        group.MapGet("/me", (ClaimsPrincipal user, HttpContext ctx) => TypedResults.Ok(new CurrentUser(
-            user.Identity!.Name!,
-            ctx.Request.Headers[SecurityMiddleware.TailscaleUserHeader].FirstOrDefault())))
+        group.MapGet("/me", (ClaimsPrincipal user, HttpContext ctx) => TypedResults.Ok(ToCurrentUser(user, ctx)))
             .RequireAuthorization();
 
         return app;
@@ -79,9 +77,13 @@ public static class AuthEndpoints
             await db.SaveChangesAsync(ct).ConfigureAwait(false);
         }
 
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(
-            [new Claim(ClaimTypes.Name, user.Username), new Claim(ClaimTypes.NameIdentifier, user.Id.ToString(System.Globalization.CultureInfo.InvariantCulture))],
-            CookieAuthenticationDefaults.AuthenticationScheme));
+        Claim[] claims =
+        [
+            new(ClaimTypes.Name, user.Username),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            .. Permissions.Admin.Select(p => new Claim(Permissions.ClaimType, p)),
+        ];
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
         await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal).ConfigureAwait(false);
         await audit.WriteAsync(user.Username, AuditActions.LoginSucceeded, "success", cancellationToken: ct).ConfigureAwait(false);
 
@@ -89,6 +91,11 @@ public static class AuthEndpoints
         ctx.User = principal;
         SecurityMiddleware.IssueAntiforgeryToken(ctx, auth.Value.SecureCookies);
 
-        return TypedResults.Ok(new CurrentUser(user.Username, ctx.Request.Headers[SecurityMiddleware.TailscaleUserHeader].FirstOrDefault()));
+        return TypedResults.Ok(ToCurrentUser(principal, ctx));
     }
+
+    private static CurrentUser ToCurrentUser(ClaimsPrincipal user, HttpContext ctx) => new(
+        user.Identity!.Name!,
+        ctx.Request.Headers[SecurityMiddleware.TailscaleUserHeader].FirstOrDefault(),
+        user.FindAll(Permissions.ClaimType).Select(c => c.Value).ToList());
 }

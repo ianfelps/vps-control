@@ -21,12 +21,29 @@ logs, executar ações administrativas autorizadas e auditadas, sem comprometer 
 | Persistência | SQLite + EF Core (migrations) |
 | Agente | .NET 10 Worker Service, Native AOT, systemd |
 | API ↔ Agente | gRPC sobre Unix domain socket |
-| Docker | Docker.DotNet (somente no agente) |
+| Docker | Cliente próprio da Docker Engine API sobre Unix socket (somente no agente)¹ |
 | Métricas Linux | leitura direta de `/proc` e `/sys` |
 | Logs | Serilog (JSON estruturado) |
 | Testes | xUnit, Vitest, Playwright |
 | Infra | Docker Compose (API), systemd (agente), Tailscale Serve |
 | CI | GitHub Actions |
+
+¹ Docker.DotNet foi descartado: depende de Newtonsoft.Json/reflection e não é compatível com
+Native AOT. O cliente próprio cobre só os endpoints usados (listar, inspecionar, stats, logs,
+start/stop/restart), com `System.Text.Json` source-generated.
+
+## Status
+
+| Fase | Situação |
+|---|---|
+| 1 — Fundação | ✅ concluída (deploy na VPS adiado) |
+| 2 — Monitoramento do Ubuntu | ✅ concluída, inclui indicadores de alerta |
+| 3 — Docker (leitura) | ✅ concluída |
+| 4 — Gerenciamento Docker | ✅ concluída |
+| 5 — Aplicações | ✅ concluída |
+| 6 — Produção e endurecimento | ✅ concluída, exceto itens que exigem a VPS (ACLs da tailnet, validação de portas, restore real) |
+
+Threat model: [threat-model.md](threat-model.md).
 
 ## 3. Arquitetura
 

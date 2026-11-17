@@ -14,4 +14,9 @@ public sealed class AgentOptions
 
     /// <summary>"ProcFs" (padrão em Linux) ou "Fake".</summary>
     public string MetricsSource { get; set; } = "ProcFs";
+
+    /// <summary>"Docker" (padrão em Linux) ou "Fake".</summary>
+    public string ContainersSource { get; set; } = "Docker";
+
+    public string DockerSocketPath { get; set; } = "/var/run/docker.sock";
 }

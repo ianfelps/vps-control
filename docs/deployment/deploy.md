@@ -22,6 +22,8 @@ O script:
 - instala o binário em `/opt/vps-control/agent`;
 - gera `/etc/vps-control/agent.token` (`root:vpsctl 0640`);
 - instala e inicia `vpsctl-agent.service` (socket em `/run/vps-control/agent.sock`, `0660`);
+  a unit dá ao agente o grupo `docker` (`SupplementaryGroups=docker`) para acessar o
+  `/var/run/docker.sock` — só o agente tem esse acesso;
 - imprime o `VPSCTL_GID` para o `.env`.
 
 Verifique:

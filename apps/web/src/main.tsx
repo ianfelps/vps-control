@@ -1,15 +1,17 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Boxes, Server } from 'lucide-react'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, Link, RouterProvider } from 'react-router'
 import { ApiError } from '@/api/client'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { RequireAuth } from '@/components/RequireAuth'
+import { ApplicationDetailPage } from '@/pages/applications/ApplicationDetailPage'
+import { ApplicationsPage } from '@/pages/applications/ApplicationsPage'
 import { AuditPage } from '@/pages/AuditPage'
+import { ContainerDetailPage } from '@/pages/containers/ContainerDetailPage'
+import { ContainersPage } from '@/pages/containers/ContainersPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { LoginPage } from '@/pages/LoginPage'
-import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -30,28 +32,10 @@ const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
-          {
-            path: 'containers',
-            element: (
-              <PlaceholderPage
-                title="Containers"
-                phase="fase 3"
-                icon={Server}
-                items={['Lista, status e healthcheck', 'CPU/memória por container', 'Logs em tempo real']}
-              />
-            ),
-          },
-          {
-            path: 'applications',
-            element: (
-              <PlaceholderPage
-                title="Aplicações"
-                phase="fase 3/5"
-                icon={Boxes}
-                items={['Agrupamento por projeto Compose', 'Status consolidado', 'Metadados e URL de acesso']}
-              />
-            ),
-          },
+          { path: 'containers', element: <ContainersPage /> },
+          { path: 'containers/:id', element: <ContainerDetailPage /> },
+          { path: 'applications', element: <ApplicationsPage /> },
+          { path: 'applications/:slug', element: <ApplicationDetailPage /> },
           { path: 'audit', element: <AuditPage /> },
           {
             path: '*',

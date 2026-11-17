@@ -76,6 +76,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Alert"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/system/status": {
         parameters: {
             query?: never;
@@ -321,10 +356,342 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/containers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ContainersSnapshot"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/containers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ContainerDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/containers/{id}/env/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ContainerDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/containers/{id}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    tail?: number;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LogLine"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/containers/{id}/{action}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    action: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ContainerActionResult"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationView"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateApplicationRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApplicationView"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Alert: {
+            id: string;
+            severity: components["schemas"]["AlertSeverity"];
+            source: string;
+            title: string;
+            detail: string;
+        };
+        /** @enum {unknown} */
+        AlertSeverity: "warning" | "critical";
+        ApplicationDetails: {
+            application: components["schemas"]["ApplicationView"];
+            containers: components["schemas"]["ContainerView"][];
+        };
+        /** @enum {unknown} */
+        ApplicationStatus: "running" | "degraded" | "stopped" | "missing";
+        ApplicationView: {
+            slug: string;
+            displayName: string;
+            description: null | string;
+            url: null | string;
+            status: components["schemas"]["ApplicationStatus"];
+            /** Format: int32 */
+            containerCount: number;
+            /** Format: int32 */
+            runningCount: number;
+            /** Format: int32 */
+            unhealthyCount: number;
+            /** Format: double */
+            cpuPercent: number;
+            /** Format: int64 */
+            memoryUsageBytes: number;
+            hasMetadata: boolean;
+        };
         AuditEntryDto: {
             /** Format: int64 */
             id: number;
@@ -336,6 +703,91 @@ export interface components {
             result: string;
             remoteIp: null | string;
             details: null | string;
+        };
+        ContainerActionResult: {
+            id: string;
+            action: string;
+            state: string;
+        };
+        ContainerDetails: {
+            summary: components["schemas"]["ContainerSummary"];
+            /** Format: date-time */
+            startedAt: null | string;
+            /** Format: date-time */
+            finishedAt: null | string;
+            /** Format: int32 */
+            exitCode: number;
+            /** Format: int32 */
+            restartCount: number;
+            restartPolicy: string;
+            command: string;
+            env: components["schemas"]["EnvVar"][];
+            labels: {
+                [key: string]: string;
+            };
+            mounts: components["schemas"]["MountInfo"][];
+            networks: components["schemas"]["NetworkAttachment"][];
+        };
+        /** @enum {unknown} */
+        ContainerHealth: "none" | "starting" | "healthy" | "unhealthy";
+        ContainerStats: {
+            id: string;
+            /** Format: double */
+            cpuPercent: number;
+            /** Format: int64 */
+            memoryUsageBytes: number;
+            /** Format: int64 */
+            memoryLimitBytes: number;
+            /** Format: int64 */
+            networkRxBytes: number;
+            /** Format: int64 */
+            networkTxBytes: number;
+            /** Format: int64 */
+            blockReadBytes: number;
+            /** Format: int64 */
+            blockWriteBytes: number;
+            /** Format: int32 */
+            pids: number;
+            /** Format: double */
+            memoryPercent?: number;
+        };
+        ContainerSummary: {
+            id: string;
+            name: string;
+            image: string;
+            state: string;
+            status: string;
+            health: components["schemas"]["ContainerHealth"];
+            /** Format: date-time */
+            createdAt: string;
+            composeProject: null | string;
+            composeService: null | string;
+            protected: boolean;
+            ports: components["schemas"]["PortMapping"][];
+            shortId?: null | string;
+            running?: boolean;
+        };
+        ContainerView: {
+            id: string;
+            shortId: string;
+            name: string;
+            image: string;
+            state: string;
+            status: string;
+            health: components["schemas"]["ContainerHealth"];
+            /** Format: date-time */
+            createdAt: string;
+            composeProject: null | string;
+            composeService: null | string;
+            protected: boolean;
+            ports: components["schemas"]["PortMapping"][];
+            stats: null | components["schemas"]["ContainerStats"];
+        };
+        ContainersSnapshot: {
+            items: components["schemas"]["ContainerView"][];
+            /** Format: date-time */
+            updatedAt: null | string;
+            error: null | string;
         };
         CpuUsage: {
             /** Format: double */
@@ -350,6 +802,7 @@ export interface components {
         CurrentUser: {
             username: string;
             tailscaleUser: null | string;
+            permissions: string[];
         };
         DiskUsage: {
             mountPoint: string;
@@ -360,6 +813,11 @@ export interface components {
             freeBytes: number;
             /** Format: int64 */
             usedBytes?: number;
+        };
+        EnvVar: {
+            name: string;
+            value: string;
+            masked: boolean;
         };
         HealthResponse: {
             status: string;
@@ -383,6 +841,23 @@ export interface components {
             memory: components["schemas"]["MemoryUsage"];
             disks: components["schemas"]["DiskUsage"][];
             networks: components["schemas"]["NetworkUsage"][];
+        };
+        HttpValidationProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+            errors?: {
+                [key: string]: string[];
+            };
+        };
+        LogLine: {
+            /** Format: date-time */
+            timestamp: null | string;
+            stream: string;
+            text: string;
         };
         LoginRequest: {
             username: string;
@@ -414,6 +889,17 @@ export interface components {
             /** Format: double */
             txBytesPerSecond: number;
         };
+        MountInfo: {
+            type: string;
+            source: string;
+            destination: string;
+            mode: string;
+            readWrite: boolean;
+        };
+        NetworkAttachment: {
+            name: string;
+            ipAddress: null | string;
+        };
         NetworkUsage: {
             interface: string;
             /** Format: int64 */
@@ -424,6 +910,14 @@ export interface components {
             rxBytesPerSecond: number;
             /** Format: double */
             txBytesPerSecond: number;
+        };
+        PortMapping: {
+            /** Format: int32 */
+            privatePort: number;
+            /** Format: int32 */
+            publicPort: null | number;
+            type: string;
+            hostIp: null | string;
         };
         ProblemDetails: {
             type?: null | string;
@@ -439,6 +933,11 @@ export interface components {
             /** Format: date-time */
             lastSuccessAt: null | string;
             lastError: null | string;
+        };
+        UpdateApplicationRequest: {
+            displayName: null | string;
+            description: null | string;
+            url: null | string;
         };
     };
     responses: never;

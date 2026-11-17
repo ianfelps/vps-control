@@ -7,6 +7,11 @@ public static class AuditActions
     public const string LoginSucceeded = "auth.login";
     public const string LoginFailed = "auth.login_failed";
     public const string Logout = "auth.logout";
+    public const string ContainerEnvReveal = "container.env_reveal";
+    public const string ApplicationUpdate = "application.update";
+
+    public static string ContainerAction(Core.Containers.ContainerAction action) =>
+        $"container.{action.ToString().ToLowerInvariant()}";
 }
 
 public sealed class AuditLog(AppDbContext db, TimeProvider time, IHttpContextAccessor http)

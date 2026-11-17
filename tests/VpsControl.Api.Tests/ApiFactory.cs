@@ -15,6 +15,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     public int LoginAttemptsPerMinute { get; init; } = 1000;
 
+    public int AdminActionsPerMinute { get; init; } = 1000;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -24,6 +26,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Auth:LoginAttemptsPerMinute", LoginAttemptsPerMinute.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting("Metrics:Source", "Fake");
         builder.UseSetting("Metrics:SampleIntervalSeconds", "0.5");
+        builder.UseSetting("Metrics:ContainerIntervalSeconds", "1");
+        builder.UseSetting("Auth:AdminActionsPerMinute", AdminActionsPerMinute.ToString(System.Globalization.CultureInfo.InvariantCulture));
         for (var i = 0; i < TailscaleAllowedUsers.Length; i++)
         {
             builder.UseSetting($"Auth:TailscaleAllowedUsers:{i}", TailscaleAllowedUsers[i]);

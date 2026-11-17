@@ -4,7 +4,6 @@ Painel web self-hosted para monitorar e administrar uma VPS Ubuntu Server, com f
 aplicações Docker. Acessível **somente pela sua tailnet** (Tailscale Serve), sem nenhuma porta
 pública.
 
-![status](https://img.shields.io/badge/fase-1%20conclu%C3%ADda-blue)
 ![.NET](https://img.shields.io/badge/.NET-10%20LTS-512BD4)
 ![React](https://img.shields.io/badge/React-19-61DAFB)
 
@@ -31,7 +30,7 @@ pública.
 
 ## Funcionalidades
 
-### Disponível (Fase 1 + coleta da Fase 2)
+### Monitoramento do host
 
 - **Dashboard em tempo real** (SignalR, amostra a cada 2 s):
   - CPU (uso %, load average 1/5/15, núcleos)
@@ -43,21 +42,37 @@ pública.
 - **Histórico em memória** de 1 h (ring buffer), recarregado ao reconectar.
 - **Aviso de fonte indisponível** com a última amostra preservada, e recuperação automática
   quando o agente volta.
+- **Alertas** avaliados pela API: CPU (média de 1 min), memória, swap e disco acima dos limites,
+  fonte de métricas indisponível, containers não saudáveis, reiniciando ou encerrados com erro.
+
+### Docker
+
+- **Lista de containers** com estado, healthcheck, uptime, CPU, memória e portas, atualizada a
+  cada 5 s em tempo real; busca, filtro por estado e agrupamento por projeto Compose.
+- **Detalhe do container:** estado, recursos (CPU, memória, rede, disco, processos), portas,
+  redes, comando, volumes/montagens e labels.
+- **Variáveis de ambiente mascaradas** (senhas, tokens, chaves, URLs com credenciais); revelar
+  exige confirmação e é auditado.
+- **Logs:** últimas N linhas e acompanhamento em tempo real, com filtro, pausa e auto-scroll.
+- **Ações start/stop/restart** com diálogo de confirmação, auditoria (sucesso, negado e falha) e
+  rate limit. Containers com a label `vpsctl.protected=true` não podem ser parados/reiniciados.
+
+### Aplicações
+
+- **Agrupamento por projeto Compose** com status consolidado (operacional, degradado, parado),
+  contagem de containers e CPU/memória agregadas.
+- **Metadados editáveis:** nome de exibição, descrição e URL de acesso (auditado).
+
+### Segurança e administração
+
 - **Login** com sessão por cookie, logout e expiração deslizante (8 h por padrão).
-- **Auditoria append-only** de logins (sucesso e falha) e logouts, com tela de consulta.
+- **Permissões por operação** (`containers.manage`, `secrets.reveal`, `applications.edit`).
+- **Auditoria append-only** de logins, ações em containers, revelação de segredos e edição de
+  aplicações, com tela de consulta.
 - **Interface responsiva** (desktop e mobile) com tema claro/escuro seguindo o sistema.
 
-### Planejado
-
-| Fase | Entrega |
-|---|---|
-| 2 | Deploy do agente real na VPS e validação do hardening systemd |
-| 3 | Containers: lista, status, healthcheck, stats, logs (tail + stream), agrupamento por projeto Compose |
-| 4 | start/stop/restart com confirmação, autorização por operação e auditoria |
-| 5 | Metadados de aplicações (descrição, URL) e métricas agregadas |
-| 6 | Endurecimento final, ACLs da tailnet, backup/restore testado |
-
-Detalhes em [docs/architecture/plano.md](docs/architecture/plano.md).
+Plano e status por fase em [docs/architecture/plano.md](docs/architecture/plano.md); análise de
+ameaças em [docs/architecture/threat-model.md](docs/architecture/threat-model.md).
 
 ---
 
@@ -85,22 +100,27 @@ Detalhes em [docs/architecture/plano.md](docs/architecture/plano.md).
  ┌────────────────────────────────────┐   serviço systemd no host
  │ VpsControl.Agent (Native AOT)      │   (usuário vpsctl-agent, hardening)
  │  • lê /proc e /sys                 │
- │  • (fase 3) único com docker.sock  │
+ │  • único com acesso ao docker.sock │
+ │  • guard: ids, protegidos, limites │
  └────────────────────────────────────┘
 ```
 
 **Por que um agente separado?** A API roda em container sem privilégios. Tudo que exige acesso
-ao host (métricas do SO, e depois o `docker.sock`, que equivale a root) fica num processo
-pequeno, compilado AOT, que expõe só operações tipadas definidas em
+ao host (métricas do SO e o `docker.sock`, que equivale a root) fica num processo pequeno,
+compilado AOT, que expõe só operações tipadas definidas em
 [agent.proto](src/VpsControl.Contracts/Protos/agent.proto) e não fala com a rede.
 
-**Fontes de métricas.** A API escolhe a fonte por configuração (`Metrics:Source`):
+**Cliente Docker próprio.** O agente fala com a Docker Engine API por um cliente mínimo
+([DockerEngineContainerRuntime](src/VpsControl.Core/Containers/Docker/DockerEngineContainerRuntime.cs))
+em vez do Docker.DotNet, que não é compatível com Native AOT.
+
+**Fontes de dados.** A API escolhe por configuração (`Metrics:Source`), para métricas e containers:
 
 | Fonte | Uso |
 |---|---|
 | `Agent` | Produção: chama o agente via gRPC (Unix socket ou TCP em dev) |
-| `Fake` | Desenvolvimento e testes: dados sintéticos, funciona em Windows/macOS |
-| `ProcFs` | API rodando direto num host Linux, sem agente |
+| `Fake` | Desenvolvimento e testes: host e containers sintéticos, funciona em Windows/macOS |
+| `ProcFs` | API rodando direto num host Linux (lê `/proc` e o `docker.sock` local), sem agente |
 
 ---
 
@@ -129,7 +149,7 @@ Regras que o código impõe (não só convenções):
 
 1. **Sem exposição pública.** A API publica apenas `127.0.0.1:8080`; o acesso externo é via
    `tailscale serve`.
-2. **Somente o agente terá acesso ao `docker.sock`.** A API nunca o monta.
+2. **Somente o agente acessa o `docker.sock`.** A API nunca o monta.
 3. **Sem execução arbitrária de comandos.** O agente expõe apenas RPCs enumerados no `.proto`.
 4. **Canal API ↔ agente autenticado:** socket `0660` restrito ao grupo `vpsctl` + token de
    ≥ 32 caracteres comparado em tempo constante.
@@ -137,12 +157,15 @@ Regras que o código impõe (não só convenções):
    (`PasswordHasher` do ASP.NET Identity), rehash automático quando necessário.
 6. **CSRF:** toda mutação em `/api` exige token antiforgery (double-submit via header
    `X-XSRF-TOKEN`), vinculado à identidade e reemitido no login/logout.
-7. **Força bruta:** login limitado por IP (5/min por padrão, responde 429).
+7. **Força bruta e abuso:** login limitado por IP (5/min) e ações administrativas por usuário
+   (30/min), respondendo 429.
 8. **Allowlist da tailnet (opcional):** exige `Tailscale-User-Login` numa lista de identidades.
    Como a API só escuta em loopback, o header não pode ser forjado por clientes da tailnet.
 9. **Auditoria append-only:** o `DbContext` recusa alterar ou remover registros de auditoria.
-10. **Containers protegidos:** a API tem a label `vpsctl.protected=true`; ações de
-    stop/restart (fase 4) serão recusadas no agente para esses containers.
+10. **Containers protegidos:** a API tem a label `vpsctl.protected=true`; stop/restart são
+    recusados no agente para esses containers (HTTP 409).
+12. **Ids validados duas vezes** (API e agente) contra path traversal na Docker API; segredos de
+    env mascarados no próprio agente; logs com limites de tail, taxa e tamanho de linha.
 11. **Hardening de runtime:** imagem chiseled sem shell, usuário não-root, filesystem
     read-only, `no-new-privileges`, limite de memória; unit systemd com `ProtectSystem=strict`,
     `RestrictAddressFamilies=AF_UNIX`, `IPAddressDeny=any`, filtro de syscalls, sem capabilities.
@@ -158,28 +181,34 @@ vps-control/
 │       ├── openapi/openapi.json  # gerado no build da API (versionado)
 │       └── src/
 │           ├── api/              # client tipado, hooks TanStack Query, SignalR
-│           ├── components/       # layout, UI base, guarda de rota
+│           ├── components/       # layout, UI base, ações e status de containers
 │           ├── lib/              # formatação e utilitários (+ testes Vitest)
-│           └── pages/            # login, dashboard, auditoria, placeholders
+│           └── pages/            # login, dashboard, containers, aplicações, auditoria
 ├── src/
 │   ├── VpsControl.Api/           # API ASP.NET Core; serve a SPA em produção
+│   │   ├── Alerts/               # avaliação de alertas
+│   │   ├── Applications/         # projetos Compose + metadados
 │   │   ├── Audit/                # serviço de auditoria
+│   │   ├── Containers/           # cache/sampler de containers, endpoints e ações
 │   │   ├── Data/                 # DbContext, entidades, migrations, seed do admin
 │   │   ├── Endpoints/            # auth, system, audit
 │   │   ├── Metrics/              # sampler, ring buffer, hub SignalR, cliente do agente
-│   │   └── Security/             # allowlist Tailscale, antiforgery
+│   │   └── Security/             # allowlist Tailscale, antiforgery, permissões
 │   ├── VpsControl.Agent/         # agente do host (systemd, Native AOT)
-│   ├── VpsControl.Contracts/     # agent.proto + mapeamento proto ↔ domínio
-│   └── VpsControl.Core/          # modelos de domínio, provedores /proc e fake
+│   ├── VpsControl.Contracts/     # agent.proto + mapeamentos proto ↔ domínio
+│   └── VpsControl.Core/
+│       ├── Metrics/              # modelos do host, provedores /proc e fake
+│       └── Containers/           # modelos, guard, máscara de env, fake, cliente Docker
 ├── tests/
-│   ├── VpsControl.Api.Tests/     # integração (auth, CSRF, rate limit, allowlist, métricas)
-│   └── VpsControl.Core.Tests/    # parsers do /proc + leitura real em Linux
+│   ├── VpsControl.Api.Tests/     # integração (auth, CSRF, rate limits, containers, apps, alertas)
+│   └── VpsControl.Core.Tests/    # parsers /proc, mapeamento Docker, demux de logs, guard
 ├── deploy/
 │   ├── docker/                   # api.Dockerfile, agent-build.Dockerfile
 │   ├── systemd/                  # vpsctl-agent.service
 │   └── scripts/                  # build-agent, install-agent, backup-db
 ├── docs/
-│   ├── architecture/plano.md     # plano e decisões
+│   ├── architecture/plano.md     # plano, decisões e status
+│   ├── architecture/threat-model.md
 │   └── deployment/deploy.md      # guia de deploy passo a passo
 ├── .github/workflows/ci.yml
 ├── compose.yaml
@@ -196,8 +225,9 @@ vps-control/
 
 ## Desenvolvimento local
 
-Funciona em Windows, macOS e Linux. Em dev as métricas vêm do provedor **fake**, então não é
-preciso Linux nem o agente.
+Funciona em Windows, macOS e Linux. Em dev as métricas e os containers vêm do provedor
+**fake** (seis containers de exemplo em três projetos), então não é preciso Linux, Docker nem o
+agente.
 
 ### Pré-requisitos
 
@@ -302,6 +332,12 @@ Chaves em `appsettings*.json`. Também podem ser definidas por variáveis de amb
 | `Metrics:AgentTokenFile` | `/run/secrets/agent_token` | Arquivo com o token do agente |
 | `Metrics:SampleIntervalSeconds` | `2` | Intervalo de coleta |
 | `Metrics:HistoryMinutes` | `60` | Tamanho do histórico em memória |
+| `Metrics:ContainerIntervalSeconds` | `5` | Atualização da lista e stats de containers |
+| `Auth:AdminActionsPerMinute` | `30` | Rate limit de ações administrativas por usuário |
+| `Alerts:CpuWarningPercent` / `CpuCriticalPercent` | `80` / `95` | Limites de CPU (média de `CpuWindowSeconds`, padrão 60) |
+| `Alerts:MemoryWarningPercent` / `MemoryCriticalPercent` | `80` / `90` | Limites de memória |
+| `Alerts:DiskWarningPercent` / `DiskCriticalPercent` | `80` / `90` | Limites por disco |
+| `Alerts:SwapWarningPercent` | `50` | Aviso de swap |
 | `Proxy:AssumeHttps` | `true` | Trata requisições como HTTPS (TLS termina no Tailscale Serve) |
 | `ForwardedHeaders:KnownNetworks` | `[]` | Redes confiáveis para `X-Forwarded-*` |
 
@@ -315,6 +351,8 @@ Arquivo `appsettings.json` ao lado do binário, ou variáveis `Agent__<Chave>`.
 | `Agent:TcpPort` | `5081` | Porta loopback quando sem socket |
 | `Agent:TokenFile` | `/etc/vps-control/agent.token` | Token compartilhado. Obrigatório fora de Development |
 | `Agent:MetricsSource` | `ProcFs` | `ProcFs` ou `Fake` |
+| `Agent:ContainersSource` | `Docker` | `Docker` ou `Fake` |
+| `Agent:DockerSocketPath` | `/var/run/docker.sock` | Socket do Docker Engine |
 
 ### Compose (`.env`)
 
@@ -343,6 +381,18 @@ Contrato OpenAPI completo em [apps/web/openapi/openapi.json](apps/web/openapi/op
 | GET | `/api/system/snapshot` | ✔ | Última amostra completa (503 se ainda não houver) |
 | GET | `/api/system/history` | ✔ | Pontos do histórico (CPU %, memória %, rx/tx) |
 | GET | `/api/audit?limit=100` | ✔ | Registros de auditoria (máx. 500) |
+| GET | `/api/alerts` | ✔ | Alertas ativos (host e containers) |
+| GET | `/api/containers` | ✔ | Lista com stats (cache atualizado a cada 5 s) |
+| GET | `/api/containers/{id}` | ✔ | Detalhes, env mascarado |
+| POST | `/api/containers/{id}/env/reveal` | `secrets.reveal` | Detalhes com env revelado (auditado) |
+| GET | `/api/containers/{id}/logs?tail=200` | ✔ | Últimas linhas de log (máx. 2000) |
+| POST | `/api/containers/{id}/{start\|stop\|restart}` | `containers.manage` | Executa a ação (auditado; 409 se protegido) |
+| GET | `/api/applications` | ✔ | Aplicações (projetos Compose) com status e métricas agregadas |
+| GET | `/api/applications/{slug}` | ✔ | Aplicação e seus containers |
+| PUT | `/api/applications/{slug}` | `applications.edit` | `{ displayName, description, url }` (auditado) |
+
+`{id}` aceita o ID do Docker (12–64 hex) ou o nome do container. Ações administrativas também
+passam pelo rate limit por usuário.
 
 Mutações (`POST`, `PUT`, `PATCH`, `DELETE`) exigem o header `X-XSRF-TOKEN` com o valor do cookie
 `XSRF-TOKEN`; o client do frontend faz isso automaticamente.
@@ -355,6 +405,10 @@ Hub SignalR em `/hubs/metrics` (requer sessão). Eventos enviados pelo servidor:
 |---|---|---|
 | `snapshot` | `(HostSnapshot, MetricsPoint)` | A cada amostra bem-sucedida |
 | `status` | `SourceStatus` | Quando a coleta falha |
+| `containers` | `ContainersSnapshot` | A cada atualização da lista e após ações |
+
+Stream cliente → servidor: `StreamLogs(id, tail)` devolve `LogLine` continuamente (tail inicial +
+follow) até o cliente cancelar.
 
 ---
 
@@ -364,11 +418,14 @@ Hub SignalR em `/hubs/metrics` (requer sessão). Eventos enviados pelo servidor:
 pnpm test
 ```
 
-- **API (15 testes de integração):** endpoints públicos/protegidos, rejeição sem antiforgery,
-  senha errada auditada, login → métricas, logout, rota `/api` desconhecida, login via HTTP atrás
-  de proxy TLS, rate limit, allowlist Tailscale (inclusive entrada vazia).
-- **Core (8 testes):** parsers de `/proc/stat`, `meminfo`, `net/dev`, `mounts`, `loadavg`,
-  `uptime`, `os-release` e leitura do `/proc` real (efetiva só em Linux).
+- **API (29 testes de integração):** endpoints públicos/protegidos, antiforgery, senha errada
+  auditada, login → métricas, logout, login via HTTP atrás de proxy TLS, rate limits de login e de
+  ações, allowlist Tailscale; containers (lista, env mascarado, revelar auditado, stop/start
+  auditados, container protegido → 409, ids/ações inválidos), logs, aplicações (agrupamento,
+  status, validação de URL, edição) e alertas.
+- **Core (37 testes):** parsers do `/proc` e leitura real (efetiva só em Linux); mapeamento das
+  respostas do Docker (list, inspect, stats com a fórmula do `docker stats`), demux de logs
+  multiplexados e TTY, máscara de env, guard (ids maliciosos, containers protegidos, limites).
 - **Frontend (Vitest):** formatação de bytes, uptime e severidade.
 
 Padrões aplicados no build: `TreatWarningsAsErrors`, analyzers `latest-recommended`, nullable,
@@ -440,15 +497,6 @@ Guia completo: **[docs/deployment/deploy.md](docs/deployment/deploy.md)**. Resum
 | Todos deslogados após atualização | Volume `data` recriado (chaves de sessão ficam em `/data/keys`) |
 | Build local falha com `NU1903` (ILCompiler) | SDK desatualizado; o projeto força o ILCompiler 10.0.15, mas atualize o SDK |
 | Dev: "Offline" no topo do dashboard | API não está rodando em `localhost:5080` |
-
----
-
-## Roadmap
-
-Após o MVP (fases 1–6): histórico persistente com retenção, alertas (CPU, RAM, disco,
-indisponibilidade), monitoramento HTTP das aplicações, notificações, gestão de imagens, volumes
-e redes, backups de aplicações, terminal web com controles extras, múltiplas VPS, dashboard
-com widgets e exportação de métricas.
 
 ---
 

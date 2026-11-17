@@ -7,6 +7,22 @@ export type MetricsPoint = Schemas['MetricsPoint']
 export type SourceStatus = Schemas['SourceStatus']
 export type CurrentUser = Schemas['CurrentUser']
 export type AuditEntry = Schemas['AuditEntryDto']
+export type ContainerView = Schemas['ContainerView']
+export type ContainersSnapshot = Schemas['ContainersSnapshot']
+export type ContainerDetails = Schemas['ContainerDetails']
+export type ContainerHealth = Schemas['ContainerHealth']
+export type LogLine = Schemas['LogLine']
+export type ApplicationView = Schemas['ApplicationView']
+export type ApplicationDetails = Schemas['ApplicationDetails']
+export type ApplicationStatus = Schemas['ApplicationStatus']
+export type Alert = Schemas['Alert']
+export type ContainerAction = 'start' | 'stop' | 'restart'
+
+export const PERMISSIONS = {
+  containersManage: 'containers.manage',
+  secretsReveal: 'secrets.reveal',
+  applicationsEdit: 'applications.edit',
+} as const
 
 export class ApiError extends Error {
   readonly status: number

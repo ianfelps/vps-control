@@ -8,6 +8,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
+    public DbSet<ApplicationMetadata> Applications => Set<ApplicationMetadata>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -29,6 +31,16 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(a => a.Details).HasMaxLength(2048);
             // SQLite não ordena DateTimeOffset nativamente; armazena como ticks UTC.
             e.Property(a => a.Timestamp).HasConversion(v => v.UtcTicks, v => new DateTimeOffset(v, TimeSpan.Zero));
+        });
+
+        modelBuilder.Entity<ApplicationMetadata>(e =>
+        {
+            e.HasKey(a => a.Slug);
+            e.Property(a => a.Slug).HasMaxLength(64);
+            e.Property(a => a.DisplayName).HasMaxLength(80);
+            e.Property(a => a.Description).HasMaxLength(500);
+            e.Property(a => a.Url).HasMaxLength(300);
+            e.Property(a => a.UpdatedAt).HasConversion(v => v.UtcTicks, v => new DateTimeOffset(v, TimeSpan.Zero));
         });
     }
 
@@ -65,6 +77,20 @@ public sealed class AdminUser
     public required string PasswordHash { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>Metadados editáveis de uma aplicação (projeto Compose identificado pelo slug).</summary>
+public sealed class ApplicationMetadata
+{
+    public required string Slug { get; set; }
+
+    public string? DisplayName { get; set; }
+
+    public string? Description { get; set; }
+
+    public string? Url { get; set; }
+
+    public DateTimeOffset UpdatedAt { get; set; }
 }
 
 public sealed class AuditEntry

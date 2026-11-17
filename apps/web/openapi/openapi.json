@@ -56,6 +56,28 @@
         }
       }
     },
+    "/api/alerts": {
+      "get": {
+        "tags": [
+          "Alerts"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Alert"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/system/status": {
       "get": {
         "tags": [
@@ -187,10 +209,386 @@
           }
         }
       }
+    },
+    "/api/containers": {
+      "get": {
+        "tags": [
+          "Containers"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContainersSnapshot"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/containers/{id}": {
+      "get": {
+        "tags": [
+          "Containers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContainerDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/containers/{id}/env/reveal": {
+      "post": {
+        "tags": [
+          "Containers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContainerDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/containers/{id}/logs": {
+      "get": {
+        "tags": [
+          "Containers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tail",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LogLine"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/containers/{id}/{action}": {
+      "post": {
+        "tags": [
+          "Containers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContainerActionResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/applications": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/applications/{slug}": {
+      "get": {
+        "tags": [
+          "Applications"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Applications"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateApplicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "Alert": {
+        "required": [
+          "id",
+          "severity",
+          "source",
+          "title",
+          "detail"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/AlertSeverity"
+          },
+          "source": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "AlertSeverity": {
+        "enum": [
+          "warning",
+          "critical"
+        ]
+      },
+      "ApplicationDetails": {
+        "required": [
+          "application",
+          "containers"
+        ],
+        "type": "object",
+        "properties": {
+          "application": {
+            "$ref": "#/components/schemas/ApplicationView"
+          },
+          "containers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContainerView"
+            }
+          }
+        }
+      },
+      "ApplicationStatus": {
+        "enum": [
+          "running",
+          "degraded",
+          "stopped",
+          "missing"
+        ]
+      },
+      "ApplicationView": {
+        "required": [
+          "slug",
+          "displayName",
+          "description",
+          "url",
+          "status",
+          "containerCount",
+          "runningCount",
+          "unhealthyCount",
+          "cpuPercent",
+          "memoryUsageBytes",
+          "hasMetadata"
+        ],
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "url": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "containerCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "runningCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unhealthyCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cpuPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "memoryUsageBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hasMetadata": {
+            "type": "boolean"
+          }
+        }
+      },
       "AuditEntryDto": {
         "required": [
           "id",
@@ -241,6 +639,336 @@
           }
         }
       },
+      "ContainerActionResult": {
+        "required": [
+          "id",
+          "action",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        }
+      },
+      "ContainerDetails": {
+        "required": [
+          "summary",
+          "startedAt",
+          "finishedAt",
+          "exitCode",
+          "restartCount",
+          "restartPolicy",
+          "command",
+          "env",
+          "labels",
+          "mounts",
+          "networks"
+        ],
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/ContainerSummary"
+          },
+          "startedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "exitCode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "restartCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "restartPolicy": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          },
+          "env": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnvVar"
+            }
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "mounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MountInfo"
+            }
+          },
+          "networks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkAttachment"
+            }
+          }
+        }
+      },
+      "ContainerHealth": {
+        "enum": [
+          "none",
+          "starting",
+          "healthy",
+          "unhealthy"
+        ]
+      },
+      "ContainerStats": {
+        "required": [
+          "id",
+          "cpuPercent",
+          "memoryUsageBytes",
+          "memoryLimitBytes",
+          "networkRxBytes",
+          "networkTxBytes",
+          "blockReadBytes",
+          "blockWriteBytes",
+          "pids"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "cpuPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "memoryUsageBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memoryLimitBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "networkRxBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "networkTxBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blockReadBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blockWriteBytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pids": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "memoryPercent": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "ContainerSummary": {
+        "required": [
+          "id",
+          "name",
+          "image",
+          "state",
+          "status",
+          "health",
+          "createdAt",
+          "composeProject",
+          "composeService",
+          "protected",
+          "ports"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "health": {
+            "$ref": "#/components/schemas/ContainerHealth"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "composeProject": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "composeService": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "ports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortMapping"
+            }
+          },
+          "shortId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "running": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ContainerView": {
+        "required": [
+          "id",
+          "shortId",
+          "name",
+          "image",
+          "state",
+          "status",
+          "health",
+          "createdAt",
+          "composeProject",
+          "composeService",
+          "protected",
+          "ports",
+          "stats"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "shortId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "health": {
+            "$ref": "#/components/schemas/ContainerHealth"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "composeProject": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "composeService": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "ports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortMapping"
+            }
+          },
+          "stats": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ContainerStats"
+              }
+            ]
+          }
+        }
+      },
+      "ContainersSnapshot": {
+        "required": [
+          "items",
+          "updatedAt",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContainerView"
+            }
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CpuUsage": {
         "required": [
           "usagePercent",
@@ -271,7 +999,8 @@
       "CurrentUser": {
         "required": [
           "username",
-          "tailscaleUser"
+          "tailscaleUser",
+          "permissions"
         ],
         "type": "object",
         "properties": {
@@ -283,6 +1012,12 @@
               "null",
               "string"
             ]
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -312,6 +1047,25 @@
           "usedBytes": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "EnvVar": {
+        "required": [
+          "name",
+          "value",
+          "masked"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "masked": {
+            "type": "boolean"
           }
         }
       },
@@ -401,6 +1155,74 @@
           }
         }
       },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "LogLine": {
+        "required": [
+          "timestamp",
+          "stream",
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "stream": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
       "LoginRequest": {
         "required": [
           "username",
@@ -483,6 +1305,51 @@
           }
         }
       },
+      "MountInfo": {
+        "required": [
+          "type",
+          "source",
+          "destination",
+          "mode",
+          "readWrite"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "readWrite": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NetworkAttachment": {
+        "required": [
+          "name",
+          "ipAddress"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ipAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "NetworkUsage": {
         "required": [
           "interface",
@@ -511,6 +1378,37 @@
           "txBytesPerSecond": {
             "type": "number",
             "format": "double"
+          }
+        }
+      },
+      "PortMapping": {
+        "required": [
+          "privatePort",
+          "publicPort",
+          "type",
+          "hostIp"
+        ],
+        "type": "object",
+        "properties": {
+          "privatePort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "publicPort": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "type": {
+            "type": "string"
+          },
+          "hostIp": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -579,6 +1477,34 @@
             ]
           }
         }
+      },
+      "UpdateApplicationRequest": {
+        "required": [
+          "displayName",
+          "description",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "url": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       }
     }
   },
@@ -590,7 +1516,16 @@
       "name": "Audit"
     },
     {
+      "name": "Alerts"
+    },
+    {
       "name": "Auth"
+    },
+    {
+      "name": "Containers"
+    },
+    {
+      "name": "Applications"
     }
   ]
 }

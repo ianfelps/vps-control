@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="VpsControl.Core.Tests" />
+    <InternalsVisibleTo Include="VpsControl.Api.Tests" />
   </ItemGroup>
 
 </Project>

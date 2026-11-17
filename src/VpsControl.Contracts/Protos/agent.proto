@@ -12,7 +12,133 @@ import "google/protobuf/duration.proto";
 service AgentService {
   rpc Ping (PingRequest) returns (PingReply);
   rpc GetHostSnapshot (HostSnapshotRequest) returns (HostSnapshotReply);
+
+  // Docker. Erros: NOT_FOUND (container inexistente), INVALID_ARGUMENT (id inválido),
+  // FAILED_PRECONDITION (container protegido).
+  rpc ListContainers (ListContainersRequest) returns (ListContainersReply);
+  rpc InspectContainer (InspectContainerRequest) returns (ContainerDetails);
+  rpc GetContainerStats (ContainerStatsRequest) returns (ContainerStatsReply);
+  rpc StreamContainerLogs (ContainerLogsRequest) returns (stream LogLine);
+  rpc ExecuteContainerAction (ContainerActionRequest) returns (ContainerActionReply);
 }
+
+// ---------- Docker ----------
+
+enum ContainerHealth {
+  CONTAINER_HEALTH_NONE = 0;
+  CONTAINER_HEALTH_STARTING = 1;
+  CONTAINER_HEALTH_HEALTHY = 2;
+  CONTAINER_HEALTH_UNHEALTHY = 3;
+}
+
+enum ContainerAction {
+  CONTAINER_ACTION_UNSPECIFIED = 0;
+  CONTAINER_ACTION_START = 1;
+  CONTAINER_ACTION_STOP = 2;
+  CONTAINER_ACTION_RESTART = 3;
+}
+
+message PortMapping {
+  int32 private_port = 1;
+  optional int32 public_port = 2;
+  string type = 3;
+  optional string host_ip = 4;
+}
+
+message ContainerSummary {
+  string id = 1;
+  string name = 2;
+  string image = 3;
+  string state = 4;
+  string status = 5;
+  ContainerHealth health = 6;
+  google.protobuf.Timestamp created_at = 7;
+  optional string compose_project = 8;
+  optional string compose_service = 9;
+  bool protected = 10;
+  repeated PortMapping ports = 11;
+}
+
+message ListContainersRequest {}
+
+message ListContainersReply {
+  repeated ContainerSummary containers = 1;
+}
+
+message InspectContainerRequest {
+  string id = 1;
+  bool reveal_env = 2;
+}
+
+message EnvVar {
+  string name = 1;
+  string value = 2;
+  bool masked = 3;
+}
+
+message MountInfo {
+  string type = 1;
+  string source = 2;
+  string destination = 3;
+  string mode = 4;
+  bool read_write = 5;
+}
+
+message NetworkAttachment {
+  string name = 1;
+  optional string ip_address = 2;
+}
+
+message ContainerDetails {
+  ContainerSummary summary = 1;
+  google.protobuf.Timestamp started_at = 2;
+  google.protobuf.Timestamp finished_at = 3;
+  int32 exit_code = 4;
+  int32 restart_count = 5;
+  string restart_policy = 6;
+  string command = 7;
+  repeated EnvVar env = 8;
+  map<string, string> labels = 9;
+  repeated MountInfo mounts = 10;
+  repeated NetworkAttachment networks = 11;
+}
+
+message ContainerStatsRequest {}
+
+message ContainerStats {
+  string id = 1;
+  double cpu_percent = 2;
+  int64 memory_usage_bytes = 3;
+  int64 memory_limit_bytes = 4;
+  int64 network_rx_bytes = 5;
+  int64 network_tx_bytes = 6;
+  int64 block_read_bytes = 7;
+  int64 block_write_bytes = 8;
+  int32 pids = 9;
+}
+
+message ContainerStatsReply {
+  repeated ContainerStats stats = 1;
+}
+
+message ContainerLogsRequest {
+  string id = 1;
+  int32 tail = 2;
+  bool follow = 3;
+}
+
+message LogLine {
+  google.protobuf.Timestamp timestamp = 1;
+  string stream = 2;
+  string text = 3;
+}
+
+message ContainerActionRequest {
+  string id = 1;
+  ContainerAction action = 2;
+}
+
+message ContainerActionReply {}
 
 message PingRequest {}
 

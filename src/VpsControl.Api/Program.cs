@@ -1,5 +1,12 @@
 using System.Net;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using VpsControl.Api.Alerts;
+using VpsControl.Api.Applications;
+using VpsControl.Api.Containers;
+using VpsControl.Core.Containers;
+using VpsControl.Core.Containers.Docker;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -114,6 +121,10 @@ builder.Services.AddRateLimiter(o =>
     o.AddPolicy(AuthEndpoints.LoginRateLimitPolicy, ctx => RateLimitPartition.GetFixedWindowLimiter(
         ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = Math.Max(1, authOptions.LoginAttemptsPerMinute), Window = TimeSpan.FromMinutes(1) }));
+    // Ações administrativas: por usuário, para conter scripts/cliques repetidos.
+    o.AddPolicy(Permissions.AdminRateLimitPolicy, ctx => RateLimitPartition.GetFixedWindowLimiter(
+        ctx.User.Identity?.Name ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = Math.Max(1, authOptions.AdminActionsPerMinute), Window = TimeSpan.FromMinutes(1) }));
 });
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
@@ -129,24 +140,52 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
 builder.Services.AddSingleton(_ => new MetricsState(
     (int)(metricsOptions.HistoryMinutes * 60 / Math.Max(0.5, metricsOptions.SampleIntervalSeconds)),
     metricsOptions.Source));
-builder.Services.AddSingleton<IHostMetricsProvider>(sp => metricsOptions.Source.ToUpperInvariant() switch
+// Fonte única para métricas e containers: agente (produção), fake (dev/teste) ou host local (ProcFs + docker.sock).
+var source = metricsOptions.Source.ToUpperInvariant();
+switch (source)
 {
-    "FAKE" => new FakeHostMetricsProvider(sp.GetRequiredService<TimeProvider>()),
-    "PROCFS" when OperatingSystem.IsLinux() => new ProcFsHostMetricsProvider(sp.GetRequiredService<TimeProvider>()),
-    "AGENT" => new AgentHostMetricsProvider(sp.GetRequiredService<IOptions<MetricsOptions>>()),
-    var other => throw new InvalidOperationException($"Metrics:Source inválido para esta plataforma: {other}"),
-});
+    case "AGENT":
+        builder.Services.AddSingleton<AgentClient>();
+        builder.Services.AddSingleton<IHostMetricsProvider>(sp => sp.GetRequiredService<AgentClient>());
+        // O guard real roda no agente; a API só valida o formato do id nos endpoints.
+        builder.Services.AddSingleton<IContainerRuntime>(sp => sp.GetRequiredService<AgentClient>());
+        break;
+    case "FAKE":
+        builder.Services.AddSingleton<IHostMetricsProvider>(sp => new FakeHostMetricsProvider(sp.GetRequiredService<TimeProvider>()));
+        builder.Services.AddSingleton<IContainerRuntime>(sp =>
+            new GuardedContainerRuntime(new FakeContainerRuntime(sp.GetRequiredService<TimeProvider>())));
+        break;
+    case "PROCFS" when OperatingSystem.IsLinux():
+        builder.Services.AddSingleton<IHostMetricsProvider>(sp => OperatingSystem.IsLinux()
+            ? new ProcFsHostMetricsProvider(sp.GetRequiredService<TimeProvider>())
+            : throw new PlatformNotSupportedException());
+        builder.Services.AddSingleton<IContainerRuntime>(_ => new GuardedContainerRuntime(new DockerEngineContainerRuntime()));
+        break;
+    default:
+        throw new InvalidOperationException($"Metrics:Source inválido para esta plataforma: {metricsOptions.Source}");
+}
+
+builder.Services.AddSingleton<ContainersService>();
+builder.Services.Configure<AlertOptions>(builder.Configuration.GetSection(AlertOptions.Section));
+builder.Services.AddSingleton<AlertEvaluator>();
 if (!isToolingHost)
 {
     builder.Services.AddHostedService<MetricsSampler>();
+    builder.Services.AddHostedService<ContainerSampler>();
 }
 
 
-// Números estritos: o OpenAPI gera `number` em vez de `number | string` para o frontend.
+// Números estritos (OpenAPI gera `number`, não `number | string`) e enums como string.
 builder.Services.ConfigureHttpJsonOptions(o =>
-    o.SerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.Strict);
+{
+    o.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+});
 builder.Services.AddSignalR().AddJsonProtocol(o =>
-    o.PayloadSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.Strict);
+{
+    o.PayloadSerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+    o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+});
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 
@@ -186,6 +225,11 @@ if (app.Environment.IsDevelopment())
 
 app.MapSystemEndpoints();
 app.MapAuthEndpoints();
+app.MapContainerEndpoints();
+app.MapApplicationEndpoints();
+app.MapGet("/api/alerts", (AlertEvaluator alerts) => TypedResults.Ok(alerts.Evaluate()))
+    .WithTags("Alerts")
+    .RequireAuthorization();
 app.MapHub<MetricsHub>(MetricsHub.Path);
 
 // Rotas /api desconhecidas: 404 JSON, não o index.html da SPA.

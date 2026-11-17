@@ -43,6 +43,32 @@ namespace VpsControl.Api.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("VpsControl.Api.Data.ApplicationMetadata", b =>
+                {
+                    b.Property<string>("Slug")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Slug");
+
+                    b.ToTable("Applications");
+                });
+
             modelBuilder.Entity("VpsControl.Api.Data.AuditEntry", b =>
                 {
                     b.Property<long>("Id")

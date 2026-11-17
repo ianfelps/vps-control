@@ -1,6 +1,8 @@
 import { AlertTriangle, Clock, Cpu, HardDrive, MemoryStick, Network, Server } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
-import { useHistory, useSnapshot, useSourceStatus } from '@/api/hooks'
+import { Link } from 'react-router'
+import { selectContainerCounts, useContainers, useHistory, useSnapshot, useSourceStatus } from '@/api/hooks'
+import { AlertsPanel } from './AlertsPanel'
 import type { HostSnapshot } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -60,6 +62,13 @@ export function DashboardPage() {
       )}
 
       {!s ? <StatsSkeleton /> : <StatCards s={s} />}
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <AlertsPanel />
+        </div>
+        <ContainersCard />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -179,7 +188,7 @@ function StatCards({ s }: { s: HostSnapshot }) {
         title="Uptime"
         icon={<Clock />}
         value={formatUptime(s.info.uptimeSeconds ?? 0)}
-        detail="Containers: disponível na fase 3"
+        detail={`Kernel ${s.info.kernelVersion}`}
       >
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Server className="size-3.5" /> {s.info.hostname}
@@ -247,6 +256,40 @@ function DisksAndNetwork({ s }: { s: HostSnapshot }) {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function ContainersCard() {
+  const { data } = useContainers()
+  const c = selectContainerCounts(data)
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Containers</CardTitle>
+        <Server className="size-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div className="text-2xl font-semibold tabular-nums text-success">{c.running}</div>
+            <div className="text-xs text-muted-foreground">rodando</div>
+          </div>
+          <div>
+            <div className="text-2xl font-semibold tabular-nums">{c.stopped}</div>
+            <div className="text-xs text-muted-foreground">parados</div>
+          </div>
+          <div>
+            <div className={`text-2xl font-semibold tabular-nums ${c.unhealthy > 0 ? 'text-danger' : ''}`}>
+              {c.unhealthy}
+            </div>
+            <div className="text-xs text-muted-foreground">não saudáveis</div>
+          </div>
+        </div>
+        <Link to="/containers" className="block text-center text-sm text-primary hover:underline">
+          Ver containers
+        </Link>
+      </CardContent>
+    </Card>
   )
 }
 

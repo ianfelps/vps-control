@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using VpsControl.Agent;
 using VpsControl.Agent.Services;
+using VpsControl.Core.Containers;
+using VpsControl.Core.Containers.Docker;
 using VpsControl.Core.Metrics;
 using VpsControl.Core.Metrics.ProcFs;
 
@@ -35,6 +37,11 @@ builder.Services.AddSingleton<IHostMetricsProvider>(sp =>
     options.MetricsSource.Equals("Fake", StringComparison.OrdinalIgnoreCase) || !OperatingSystem.IsLinux()
         ? new FakeHostMetricsProvider(sp.GetRequiredService<TimeProvider>())
         : new ProcFsHostMetricsProvider(sp.GetRequiredService<TimeProvider>()));
+// Toda operação de container passa pelo guard (ids válidos, limites de log, containers protegidos).
+builder.Services.AddSingleton<IContainerRuntime>(_ => new GuardedContainerRuntime(
+    options.ContainersSource.Equals("Fake", StringComparison.OrdinalIgnoreCase) || !OperatingSystem.IsLinux()
+        ? new FakeContainerRuntime()
+        : new DockerEngineContainerRuntime(options.DockerSocketPath)));
 builder.Services.AddGrpc(o => o.Interceptors.Add<TokenAuthInterceptor>());
 
 var app = builder.Build();
@@ -57,9 +64,10 @@ if (useSocket)
 }
 
 app.Logger.LogInformation(
-    "Agente escutando em {Endpoint} (métricas: {Source})",
+    "Agente escutando em {Endpoint} (métricas: {Source}, containers: {Containers})",
     useSocket ? $"unix:{options.SocketPath}" : $"http://localhost:{options.TcpPort}",
-    options.MetricsSource);
+    options.MetricsSource,
+    options.ContainersSource);
 
 await app.RunAsync().ConfigureAwait(false);
 
