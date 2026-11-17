@@ -54,13 +54,19 @@ var metricsOptions = builder.Configuration.GetSection(MetricsOptions.Section).Ge
 
 // ---------- Persistência ----------
 var connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=.data/vpscontrol.db";
-var dataDirectory = EnsureDatabaseDirectory(connectionString);
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite(connectionString));
 
-// Chaves de sessão/antiforgery persistidas junto ao banco: sessões sobrevivem a restart/atualização do container.
-builder.Services.AddDataProtection()
-    .SetApplicationName("vps-control")
-    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDirectory, "keys")));
+// Hosts de tooling (OpenAPI no build, dotnet ef) rodam como Production em máquinas de build/CI:
+// não criar diretórios de dados nem chaves ali (no CI, /data nem é gravável).
+if (!isToolingHost)
+{
+    var dataDirectory = EnsureDatabaseDirectory(connectionString);
+
+    // Chaves de sessão/antiforgery persistidas junto ao banco: sessões sobrevivem a restart/atualização do container.
+    builder.Services.AddDataProtection()
+        .SetApplicationName("vps-control")
+        .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDirectory, "keys")));
+}
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IPasswordHasher<AdminUser>, PasswordHasher<AdminUser>>();
 if (!isToolingHost)
